@@ -1,5 +1,6 @@
 package com.example.library;
 
+import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -33,7 +34,8 @@ public class HorizontalLayout extends FrameLayout {
     private float mTouchStartX;
 
     private float mTouchCurX;
-    private DecelerateInterpolator decelerateInterpolator = new DecelerateInterpolator(10);
+
+    private boolean isBackAniDoing;
 
 
     public HorizontalLayout(@NonNull Context context) {
@@ -54,9 +56,7 @@ public class HorizontalLayout extends FrameLayout {
             throw new RuntimeException("you can only attach one child");
         }
         setAttrs(attrs);
-        /*mPullHeight = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 150, context.getResources().getDisplayMetrics());
-        mHeaderHeight = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 100, context.getResources().getDisplayMetrics());*/
-        mPullHeight = 150;
+        mPullHeight = 100;
         mHeaderHeight = 100;
 
         this.post(new Runnable() {
@@ -101,6 +101,28 @@ public class HorizontalLayout extends FrameLayout {
             }
         });
 
+        backAni.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                isBackAniDoing = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                isBackAniDoing = false;
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+
         backAni.setDuration(500);
         backAni.start();
     }
@@ -112,7 +134,6 @@ public class HorizontalLayout extends FrameLayout {
         val = Math.abs(val);
         MarginLayoutParams layoutParams = (MarginLayoutParams) dragView.getLayoutParams();
         if (layoutParams != null) {
-            Log.d(TAG, "width = " + val + " height = " + layoutParams.height);
             layoutParams.width = val;
             dragView.requestLayout();
         }
@@ -125,14 +146,19 @@ public class HorizontalLayout extends FrameLayout {
                 mTouchStartX = ev.getX();
                 mTouchCurX = mTouchStartX;
 
-                Log.d(TAG,  "onInterceptTouchEvent down");
                 break;
             case MotionEvent.ACTION_MOVE:
 
-                Log.d(TAG,  "onInterceptTouchEvent move");
                 float curX = ev.getX();
                 float dx = curX - mTouchStartX;
-                if (dx > 0 && !canChildScrollUp()) {
+
+                if (dx > 0 && !canChildScrollLeft()) {
+                    Log.d(TAG,  "onInterceptTouchEvent event Left");
+                    return true;
+                }
+
+                if (dx < 0 && !canChildScrollRight()) {
+                    Log.d(TAG,  "onInterceptTouchEvent event Right");
                     return true;
                 }
         }
@@ -145,22 +171,19 @@ public class HorizontalLayout extends FrameLayout {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_MOVE:
-
+                if (isBackAniDoing) {
+                    return super.onTouchEvent(event);
+                }
                 mTouchCurX = event.getX();
                 float dx = mTouchCurX - mTouchStartX;
 
-                Log.d(TAG,  "onTouchEvent move dx = " + dx);
                 dx = Math.max(-mPullHeight * 2, dx);
                 dx = Math.min(dx, 0);
 
                 if (mChildView != null) {
-                    float offsetX = decelerateInterpolator.getInterpolation(dx / 2 / mPullHeight) * dx / 2;
-
-                    Log.d(TAG,  "onTouchEvent move offsetX = " + offsetX);
                     mChildView.setTranslationX(dx);
                     requestDragView((int)dx);
                 }
-
 
                 return true;
             case MotionEvent.ACTION_UP:
@@ -181,10 +204,17 @@ public class HorizontalLayout extends FrameLayout {
 
     }
 
-    private boolean canChildScrollUp() {
+    private boolean canChildScrollRight() {
         if (mChildView == null) {
             return false;
         }
-        return ViewCompat.canScrollVertically(mChildView, -1);
+        return ViewCompat.canScrollHorizontally(mChildView, 1);
+    }
+
+    private boolean canChildScrollLeft() {
+        if (mChildView == null) {
+            return false;
+        }
+        return ViewCompat.canScrollHorizontally(mChildView, -1);
     }
 }

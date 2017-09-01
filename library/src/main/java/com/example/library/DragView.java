@@ -10,7 +10,9 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.support.annotation.Nullable;
 import android.support.annotation.Px;
+import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 /**
@@ -22,7 +24,9 @@ public class DragView extends View{
     private final float BEZIER = 0.552284749831f;
 
     private Paint paint;
+    private Paint textPaint;
     private Path path;
+    private Path textPath;
     public DragView(Context context) {
         this(context, null, 0);
     }
@@ -33,18 +37,30 @@ public class DragView extends View{
 
     public DragView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
+        initPaint();
+        initTextPaint();
+        initTextPaint();
+        initPoints();
+        path = new Path();
+        textPath = new Path();
     }
 
-    private void init() {
+    private void initTextPaint() {
+        textPaint = new Paint();
+        textPaint.setStrokeWidth(4);
+        textPaint.setTextSize(50);
+        textPaint.setColor(Color.BLACK);
+        textPaint.setAntiAlias(true);
+        textPaint.setStyle(Paint.Style.FILL);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+    }
+
+    private void initPaint() {
         paint = new Paint();
         paint.setColor(Color.parseColor("#bbbbbb"));
         paint.setStrokeWidth(1);
         paint.setAntiAlias(true);
         paint.setStyle(Paint.Style.FILL);
-        paint.setTextSize(1);
-        path = new Path();
-        initPoints();
     }
 
 
@@ -52,15 +68,25 @@ public class DragView extends View{
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        drawPath(canvas);
-        
+        drawBezier(canvas);
+        drawText(canvas);
+
     }
 
-    private void drawPath(Canvas canvas) {
+    private void drawText(Canvas canvas) {
+
+        int xPos = (canvas.getWidth() / 2);
+        int yPos = (int) ((canvas.getHeight() / 2) - ((textPaint.descent() + textPaint.ascent()) / 2)) ;
+        //((textPaint.descent() + textPaint.ascent()) / 2) is the distance from the baseline to the center.
+        //yPos 即为计算得到的“Hello“文本的baseLine的Y坐标
+        canvas.drawText("Hello", xPos, yPos, textPaint);
+    }
+
+    private void drawBezier(Canvas canvas) {
         int width = getWidth();
         int height = getHeight();
         initPoint(width, height);
-        drawBezier();
+        drawBezierPath();
         canvas.drawPath(path, paint);
     }
 
@@ -96,7 +122,7 @@ public class DragView extends View{
         controlPoints[3].set(width - bezierWidth, height);
     }
 
-    private void drawBezier() {
+    private void drawBezierPath() {
         path.reset();
         path.moveTo(vertexPoints[0].x, vertexPoints[0].y);
         path.cubicTo(controlPoints[0].x, controlPoints[0].y,

@@ -12,12 +12,13 @@
         android:layout_gravity="center"
         >
 
-        <TextView
-            android:text="123"
-            android:gravity="center"
-            android:background="@android:color/darker_gray"
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recycler"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent">
+
+        </android.support.v7.widget.RecyclerView>
+
     </com.example.library.HorizontalLayout>
 
 </FrameLayout>
