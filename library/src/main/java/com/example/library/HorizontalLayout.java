@@ -35,7 +35,7 @@ public class HorizontalLayout extends FrameLayout {
     //子View，一般都是RecyclerView
     private View mChildView;
     //拖拽View，类似于Header
-    private DragView dragView;
+    private View dragView;
 
     private float mTouchStartX;
 
@@ -73,7 +73,6 @@ public class HorizontalLayout extends FrameLayout {
             @Override
             public void run() {
                 mChildView = getChildAt(0);
-                addDragView();
             }
         });
     }
@@ -82,19 +81,9 @@ public class HorizontalLayout extends FrameLayout {
 
     }
 
-    private void addDragView() {
-        dragView = new DragView(getContext());
-        LayoutParams params = new LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT);
-        params.gravity = Gravity.RIGHT;
-        dragView.setLayoutParams(params);
-        addViewInternal(dragView);
-        dragView.setText("大V推荐");
-        dragView.setTextSize(34);
-        onDragCallBack = dragView;
-    }
-
-    private void addViewInternal(@NonNull View child) {
+    public void addDragView(@NonNull View child) {
         super.addView(child);
+        dragView = child;
     }
 
 
@@ -140,14 +129,15 @@ public class HorizontalLayout extends FrameLayout {
         backAni.start();
     }
 
-    public void requestDragView(int val) {
+    public void requestDragView(float val) {
         if (dragView == null) {
             return;
         }
-        val = Math.abs(val);
+        int width = (int)Math.abs(val);
+        doDragCallBack(val);
         MarginLayoutParams layoutParams = (MarginLayoutParams) dragView.getLayoutParams();
         if (layoutParams != null) {
-            layoutParams.width = val;
+            layoutParams.width = width;
             dragView.requestLayout();
         }
     }
@@ -166,12 +156,10 @@ public class HorizontalLayout extends FrameLayout {
                 float dx = curX - mTouchStartX;
 
                 if (dx > 0 && !canChildScrollLeft()) {
-                    Log.d(TAG,  "onInterceptTouchEvent event Left");
                     return true;
                 }
 
                 if (dx < 0 && !canChildScrollRight()) {
-                    Log.d(TAG,  "onInterceptTouchEvent event Right");
                     return true;
                 }
         }
@@ -197,31 +185,37 @@ public class HorizontalLayout extends FrameLayout {
                     mChildView.setTranslationX(dx);
                     requestDragView((int)dx);
                 }
-                if (onDragCallBack != null) {
-                    if (Math.abs(dx) > mDragCallBackWidth) {
-                        onDragCallBack.onDrag(releaseText, releaseTextColor);
-                    } else {
-                        onDragCallBack.onRelease(dragText, dragTextColor);
-                    }
+
+                if (onDragWidthChange != null) {
+                    onDragWidthChange.onWidthChange((int)Math.abs(dx));
                 }
+
+                doDragCallBack(dx);
 
                 return true;
             case MotionEvent.ACTION_UP:
 
-                Log.d(TAG,  "onTouchEvent up");
             case MotionEvent.ACTION_CANCEL:
                 if (mChildView != null) {
                     if (Math.abs(mChildView.getTranslationX()) >= 0) {
                         doBackAnimation(mChildView.getTranslationX(), 0);
                     }
                 }
-
-                Log.d(TAG,  "onTouchEvent cancel");
                 return true;
             default:
                 return super.onTouchEvent(event);
         }
 
+    }
+
+    private void doDragCallBack(float dx) {
+        if (onDragCallBack != null) {
+            if (Math.abs(dx) > mDragCallBackWidth) {
+                onDragCallBack.onDrag(releaseText, releaseTextColor);
+            } else {
+                onDragCallBack.onRelease(dragText, dragTextColor);
+            }
+        }
     }
 
     private boolean canChildScrollRight() {
@@ -256,10 +250,24 @@ public class HorizontalLayout extends FrameLayout {
 
     public OnDragCallBack onDragCallBack;
 
+    public void setOnDragCallBack(OnDragCallBack onDragCallBack) {
+        this.onDragCallBack = onDragCallBack;
+    }
+
     public interface OnDragCallBack{
 
         void onDrag(String text, @ColorInt int color);
 
         void onRelease(String text, @ColorInt int color);
+    }
+
+    public OnDragWidthChange onDragWidthChange;
+
+    public void setOnDragWidthChange(OnDragWidthChange onDragWidthChange) {
+        this.onDragWidthChange = onDragWidthChange;
+    }
+
+    public interface OnDragWidthChange{
+        void onWidthChange(int dx);
     }
 }

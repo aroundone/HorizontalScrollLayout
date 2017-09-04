@@ -10,7 +10,10 @@ import android.graphics.Typeface;
 import android.support.annotation.ColorInt;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 /**
  * Created by guoziliang on 2017/7/31.
@@ -56,7 +59,7 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
     private void initTextPaint() {
         textPaint = new Paint();
         textPaint.setStrokeWidth(4);
-        textPaint.setTextSize(50);
+        textPaint.setTextSize(35);
         textPaint.setColor(Color.BLACK);
         textPaint.setAntiAlias(true);
         textPaint.setStyle(Paint.Style.FILL);
@@ -69,6 +72,14 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
         paint.setStrokeWidth(1);
         paint.setAntiAlias(true);
         paint.setStyle(Paint.Style.FILL);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasWindowFocus) {
+        super.onWindowFocusChanged(hasWindowFocus);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT);
+        params.gravity = Gravity.RIGHT;
+        setLayoutParams(params);
     }
 
     @Override
@@ -94,7 +105,6 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
 
     //计算文字行数和总宽
     private void GetTextInfo() {
-        textPaint.setTextSize(mFontSize);
         //获得字宽
         float[] widths = new float[1];
         textPaint.getTextWidths("正", widths);//获取单个汉字的宽度

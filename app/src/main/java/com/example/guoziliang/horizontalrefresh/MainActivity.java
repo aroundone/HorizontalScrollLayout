@@ -10,15 +10,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.library.DragView;
+import com.example.library.HorizontalLayout;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    HorizontalLayout horizontalLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        horizontalLayout = (HorizontalLayout) findViewById(R.id.horizontal);
+        DragView dragView = new DragView(this);
+        horizontalLayout.addDragView(dragView);
+        horizontalLayout.setOnDragCallBack(dragView);
+
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler);
         Adapter adapter = new Adapter(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
