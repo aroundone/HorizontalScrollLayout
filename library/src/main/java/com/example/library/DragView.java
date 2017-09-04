@@ -226,13 +226,13 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
 
     @Override
     public void onDrag() {
-        setText(dragText);
-        setTextColor(dragTextColor);
+        setText(releaseText);
+        setTextColor(releaseTextColor);
     }
 
     @Override
     public void onRelease() {
-        setText(releaseText);
-        setTextColor(releaseTextColor);
+        setText(dragText);
+        setTextColor(dragTextColor);
     }
 }

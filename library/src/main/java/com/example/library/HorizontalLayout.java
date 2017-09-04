@@ -63,8 +63,8 @@ public class HorizontalLayout extends FrameLayout {
             throw new RuntimeException("you can only attach one child");
         }
         setAttrs(attrs);
-        mPullWidth = 100;
-        mDragCallBackWidth = 80;
+        mPullWidth = 200;
+        mDragCallBackWidth = 150;
 
         this.post(new Runnable() {
             @Override
@@ -175,7 +175,7 @@ public class HorizontalLayout extends FrameLayout {
                 mTouchCurX = event.getX();
                 float dx = mTouchCurX - mTouchStartX;
 
-                dx = Math.max(-mPullWidth * 2, dx);
+                dx = Math.max(-mPullWidth, dx);
                 dx = Math.min(dx, 0);
 
                 if (mChildView != null) {
