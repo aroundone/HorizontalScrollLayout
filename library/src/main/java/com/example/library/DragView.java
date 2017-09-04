@@ -17,6 +17,8 @@ import android.widget.FrameLayout;
 
 /**
  * Created by guoziliang on 2017/7/31.
+ *
+ * 实现{@link com.example.library.HorizontalLayout.OnDragCallBack}。保证联动
  */
 
 public class DragView extends View implements HorizontalLayout.OnDragCallBack {
@@ -37,6 +39,12 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
     private float mFontSize = 24;// 字体大小
     private float TextLength = 0 ;//字符串长度
     private String text="";//待显示的文字
+
+
+    private String dragText = "大V推荐";
+    private int dragTextColor = Color.BLACK;
+    private String releaseText = "松开啦";
+    private int releaseTextColor = Color.BLUE;
 
 
     public DragView(Context context) {
@@ -200,15 +208,31 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
         return mTextWidth;
     }
 
-    @Override
-    public void onDrag(String text, @ColorInt int color) {
-        setText(text);
-        setTextColor(color);
+    public void setDragText(String dragText) {
+        this.dragText = dragText;
+    }
+
+    public void setDragTextColor(int dragTextColor) {
+        this.dragTextColor = dragTextColor;
+    }
+
+    public void setReleaseText(String releaseText) {
+        this.releaseText = releaseText;
+    }
+
+    public void setReleaseTextColor(int releaseTextColor) {
+        this.releaseTextColor = releaseTextColor;
     }
 
     @Override
-    public void onRelease(String text, @ColorInt int color) {
-        setText(text);
-        setTextColor(color);
+    public void onDrag() {
+        setText(dragText);
+        setTextColor(dragTextColor);
+    }
+
+    @Override
+    public void onRelease() {
+        setText(releaseText);
+        setTextColor(releaseTextColor);
     }
 }

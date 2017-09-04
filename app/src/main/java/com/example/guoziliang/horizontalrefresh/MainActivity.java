@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
         horizontalLayout.addDragView(dragView);
         horizontalLayout.setOnDragCallBack(dragView);
 
+
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler);
         Adapter adapter = new Adapter(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));

@@ -22,6 +22,8 @@ import android.widget.FrameLayout;
 
 /**
  * Created by guoziliang on 2017/7/29.
+ *
+ * 只负责控制ChildView和DragView的运动，DragView的具体实现由DragView实现，通过接口传递
  */
 
 public class HorizontalLayout extends FrameLayout {
@@ -42,11 +44,6 @@ public class HorizontalLayout extends FrameLayout {
     private float mTouchCurX;
 
     private boolean isBackAniDoing;
-
-    private String dragText = "大V推荐";
-    private int dragTextColor = Color.BLACK;
-    private String releaseText = "松开啦";
-    private int releaseTextColor = Color.BLUE;
 
     public HorizontalLayout(@NonNull Context context) {
         this(context, null, 0);
@@ -211,9 +208,9 @@ public class HorizontalLayout extends FrameLayout {
     private void doDragCallBack(float dx) {
         if (onDragCallBack != null) {
             if (Math.abs(dx) > mDragCallBackWidth) {
-                onDragCallBack.onDrag(releaseText, releaseTextColor);
+                onDragCallBack.onDrag();
             } else {
-                onDragCallBack.onRelease(dragText, dragTextColor);
+                onDragCallBack.onRelease();
             }
         }
     }
@@ -232,21 +229,7 @@ public class HorizontalLayout extends FrameLayout {
         return ViewCompat.canScrollHorizontally(mChildView, -1);
     }
 
-    public void setDragText(String dragText) {
-        this.dragText = dragText;
-    }
 
-    public void setDragTextColor(int dragTextColor) {
-        this.dragTextColor = dragTextColor;
-    }
-
-    public void setReleaseText(String releaseText) {
-        this.releaseText = releaseText;
-    }
-
-    public void setReleaseTextColor(int releaseTextColor) {
-        this.releaseTextColor = releaseTextColor;
-    }
 
     public OnDragCallBack onDragCallBack;
 
@@ -256,9 +239,9 @@ public class HorizontalLayout extends FrameLayout {
 
     public interface OnDragCallBack{
 
-        void onDrag(String text, @ColorInt int color);
+        void onDrag();
 
-        void onRelease(String text, @ColorInt int color);
+        void onRelease();
     }
 
     public OnDragWidthChange onDragWidthChange;
