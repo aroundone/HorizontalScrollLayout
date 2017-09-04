@@ -4,7 +4,9 @@ import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Color;
 import android.support.annotation.AttrRes;
+import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.ViewCompat;
@@ -26,9 +28,13 @@ public class HorizontalLayout extends FrameLayout {
 
     private final String TAG =  "HorizontalLayout";
 
-    private float mPullHeight;
-    private float mHeaderHeight;
+    //可以拖拽出来的宽度
+    private float mPullWidth;
+    //触发变色的宽度
+    private float mDragCallBackWidth;
+    //子View，一般都是RecyclerView
     private View mChildView;
+    //拖拽View，类似于Header
     private DragView dragView;
 
     private float mTouchStartX;
@@ -37,6 +43,10 @@ public class HorizontalLayout extends FrameLayout {
 
     private boolean isBackAniDoing;
 
+    private String dragText = "大V推荐";
+    private int dragTextColor = Color.BLACK;
+    private String releaseText = "松开啦";
+    private int releaseTextColor = Color.BLUE;
 
     public HorizontalLayout(@NonNull Context context) {
         this(context, null, 0);
@@ -56,8 +66,8 @@ public class HorizontalLayout extends FrameLayout {
             throw new RuntimeException("you can only attach one child");
         }
         setAttrs(attrs);
-        mPullHeight = 100;
-        mHeaderHeight = 100;
+        mPullWidth = 100;
+        mDragCallBackWidth = 80;
 
         this.post(new Runnable() {
             @Override
@@ -78,6 +88,9 @@ public class HorizontalLayout extends FrameLayout {
         params.gravity = Gravity.RIGHT;
         dragView.setLayoutParams(params);
         addViewInternal(dragView);
+        dragView.setText("大V推荐");
+        dragView.setTextSize(34);
+        onDragCallBack = dragView;
     }
 
     private void addViewInternal(@NonNull View child) {
@@ -177,12 +190,19 @@ public class HorizontalLayout extends FrameLayout {
                 mTouchCurX = event.getX();
                 float dx = mTouchCurX - mTouchStartX;
 
-                dx = Math.max(-mPullHeight * 2, dx);
+                dx = Math.max(-mPullWidth * 2, dx);
                 dx = Math.min(dx, 0);
 
                 if (mChildView != null) {
                     mChildView.setTranslationX(dx);
                     requestDragView((int)dx);
+                }
+                if (onDragCallBack != null) {
+                    if (Math.abs(dx) > mDragCallBackWidth) {
+                        onDragCallBack.onDrag(releaseText, releaseTextColor);
+                    } else {
+                        onDragCallBack.onRelease(dragText, dragTextColor);
+                    }
                 }
 
                 return true;
@@ -216,5 +236,30 @@ public class HorizontalLayout extends FrameLayout {
             return false;
         }
         return ViewCompat.canScrollHorizontally(mChildView, -1);
+    }
+
+    public void setDragText(String dragText) {
+        this.dragText = dragText;
+    }
+
+    public void setDragTextColor(int dragTextColor) {
+        this.dragTextColor = dragTextColor;
+    }
+
+    public void setReleaseText(String releaseText) {
+        this.releaseText = releaseText;
+    }
+
+    public void setReleaseTextColor(int releaseTextColor) {
+        this.releaseTextColor = releaseTextColor;
+    }
+
+    public OnDragCallBack onDragCallBack;
+
+    public interface OnDragCallBack{
+
+        void onDrag(String text, @ColorInt int color);
+
+        void onRelease(String text, @ColorInt int color);
     }
 }

@@ -5,28 +5,37 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Point;
 import android.graphics.PointF;
-import android.graphics.RectF;
+import android.graphics.Typeface;
+import android.support.annotation.ColorInt;
 import android.support.annotation.Nullable;
-import android.support.annotation.Px;
-import android.text.TextPaint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 /**
  * Created by guoziliang on 2017/7/31.
  */
 
-public class DragView extends View{
+public class DragView extends View implements HorizontalLayout.OnDragCallBack {
 
     private final float BEZIER = 0.552284749831f;
 
     private Paint paint;
-    private Paint textPaint;
     private Path path;
-    private Path textPath;
+
+
+    public static final int LAYOUT_CHANGED = 1;
+    private Paint textPaint;
+    private float mTextPosx = 0;// x坐标
+    private float mTextPosy = 0;// y坐标
+    private float mTextWidth = 0;// 绘制宽度
+    private float mTextHeight = 0;// 绘制高度
+    private float mFontHeight = 0;// 绘制字体高度
+    private float mFontSize = 24;// 字体大小
+    private float TextLength = 0 ;//字符串长度
+    private String text="";//待显示的文字
+
+
     public DragView(Context context) {
         this(context, null, 0);
     }
@@ -42,7 +51,6 @@ public class DragView extends View{
         initTextPaint();
         initPoints();
         path = new Path();
-        textPath = new Path();
     }
 
     private void initTextPaint() {
@@ -63,23 +71,36 @@ public class DragView extends View{
         paint.setStyle(Paint.Style.FILL);
     }
 
-
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
         drawBezier(canvas);
-        drawText(canvas);
+        drawText(canvas, this.text);
 
     }
 
-    private void drawText(Canvas canvas) {
+    private void drawText(Canvas canvas, String thetext) {
+        char ch;
+        Paint.FontMetricsInt fontMetrics = textPaint.getFontMetricsInt();
+        mTextPosx = (int) (canvas.getWidth() + ((textPaint.descent() + textPaint.ascent())));//初始化x坐标
+        mTextPosy =(int) ((canvas.getHeight() - mTextHeight) / 2) - fontMetrics.top;//初始化y坐标
+        for (int i = 0; i < this.TextLength; i++) {
+            ch = thetext.charAt(i);
+            canvas.drawText(String.valueOf(ch), mTextPosx, mTextPosy, textPaint);
+            mTextPosy += mFontHeight;
+        }
+    }
 
-        int xPos = (canvas.getWidth() / 2);
-        int yPos = (int) ((canvas.getHeight() / 2) - ((textPaint.descent() + textPaint.ascent()) / 2)) ;
-        //((textPaint.descent() + textPaint.ascent()) / 2) is the distance from the baseline to the center.
-        //yPos 即为计算得到的“Hello“文本的baseLine的Y坐标
-        canvas.drawText("Hello", xPos, yPos, textPaint);
+    //计算文字行数和总宽
+    private void GetTextInfo() {
+        textPaint.setTextSize(mFontSize);
+        //获得字宽
+        float[] widths = new float[1];
+        textPaint.getTextWidths("正", widths);//获取单个汉字的宽度
+        Paint.FontMetrics fm = textPaint.getFontMetrics();
+        mFontHeight = (int) Math.ceil(fm.descent - fm.top);// 获得字体高度
+        mTextHeight = mFontHeight * text.length();
     }
 
     private void drawBezier(Canvas canvas) {
@@ -134,4 +155,50 @@ public class DragView extends View{
         path.close();
     }
 
+
+
+    public final void setText(String text) {
+        this.text=text;
+        this.TextLength = text.length();
+        GetTextInfo();
+        requestLayout();
+    }
+    //设置字体大小
+    public final void setTextSize(float size) {
+        if (size != textPaint.getTextSize()) {
+            mFontSize = size;
+            GetTextInfo();
+        }
+    }
+    //设置字体颜色
+    public final void setTextColor(int color) {
+        textPaint.setColor(color);
+        requestLayout();
+    }
+    //设置字体颜色
+    public final void setTextARGB(int a,int r,int g,int b) {
+        textPaint.setARGB(a, r, g, b);
+    }
+    //设置字体
+    public void setTypeface(Typeface tf) {
+        if (this.textPaint.getTypeface() != tf) {
+            this.textPaint.setTypeface(tf);
+        }
+    }
+    //获取实际宽度
+    public float getTextWidth() {
+        return mTextWidth;
+    }
+
+    @Override
+    public void onDrag(String text, @ColorInt int color) {
+        setText(text);
+        setTextColor(color);
+    }
+
+    @Override
+    public void onRelease(String text, @ColorInt int color) {
+        setText(text);
+        setTextColor(color);
+    }
 }
