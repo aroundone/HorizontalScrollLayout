@@ -82,7 +82,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         dragView = child;
     }
 
-    void doDragAnimation() {
+    void doDragBackAnimation() {
         PropertyValuesHolder holder = PropertyValuesHolder.ofFloat(TAG, mChildView.getTranslationX(), 0);
         doBackAnimation(holder, 500);
     }
@@ -92,11 +92,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                if (mChildView != null) {
-                    float val = (float) animation.getAnimatedValue();
-                    mChildView.setTranslationX(val);
-                    requestDragView((int)val);
-                }
+
+                float val = (float) animation.getAnimatedValue();
+                requestNestedView(val);
             }
         });
         animator.addListener(new Animator.AnimatorListener() {
@@ -107,7 +105,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                doDragAnimation();
+                doDragBackAnimation();
             }
 
             @Override
@@ -135,10 +133,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 float val = (float) animation.getAnimatedValue();
-                if (mChildView != null) {
-                    mChildView.setTranslationX(val);
-                    requestDragView((int)val);
-                }
+                requestNestedView(val);
             }
         });
 
@@ -168,7 +163,11 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         backAni.start();
     }
 
-    public void requestDragView(float val) {
+    /**
+     * 刷新DragView
+     * @param val
+     */
+    private void requestDragView(float val) {
         if (dragView == null) {
             return;
         }
@@ -219,17 +218,15 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
                 mTouchCurX = event.getX();
                 float dx = mTouchCurX - mTouchStartX;
 
-                doHorizontalDx(operateDx(dx));
-                if (onDragWidthChange != null) {
-                    onDragWidthChange.onWidthChange((int)Math.abs(dx));
-                }
+                dragHorizontal(operateDx(dx));
+
                 return true;
             case MotionEvent.ACTION_UP:
 
             case MotionEvent.ACTION_CANCEL:
                 if (mChildView != null) {
                     if (Math.abs(mChildView.getTranslationX()) >= 0) {
-                        doDragAnimation();
+                        doDragBackAnimation();
                     }
                 }
                 return true;
@@ -239,13 +236,23 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     }
 
-    void doHorizontalDx(float dx) {
+    /**
+     * 拦截事件，父View做拖拽动效和回调
+     * @param dx
+     */
+    void dragHorizontal(float dx) {
+
         requestNestedView(dx);
 
         doDragCallBack(dx);
     }
 
+    /**
+     * 联动DragView和子View
+     * @param dx
+     */
     void requestNestedView(float dx) {
+        //动子View
         if (mChildView != null) {
             mChildView.setTranslationX(dx);
         }
@@ -305,16 +312,6 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         void onDrag();
 
         void onRelease();
-    }
-
-    public OnDragWidthChange onDragWidthChange;
-
-    public void setOnDragWidthChange(OnDragWidthChange onDragWidthChange) {
-        this.onDragWidthChange = onDragWidthChange;
-    }
-
-    public interface OnDragWidthChange{
-        void onWidthChange(int dx);
     }
 
     @Override
