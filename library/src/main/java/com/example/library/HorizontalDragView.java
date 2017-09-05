@@ -18,10 +18,10 @@ import android.widget.FrameLayout;
 /**
  * Created by guoziliang on 2017/7/31.
  *
- * 实现{@link com.example.library.HorizontalLayout.OnDragCallBack}。保证联动
+ * 实现{@link com.example.library.HorizontalScrollLayout.OnDragCallBack}。保证联动
  */
 
-public class DragView extends View implements HorizontalLayout.OnDragCallBack {
+public class HorizontalDragView extends View implements HorizontalScrollLayout.OnDragCallBack {
 
     private final float BEZIER = 0.552284749831f;
 
@@ -36,7 +36,6 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
     private float mTextWidth = 0;// 绘制宽度
     private float mTextHeight = 0;// 绘制高度
     private float mFontHeight = 0;// 绘制字体高度
-    private float mFontSize = 24;// 字体大小
     private float TextLength = 0 ;//字符串长度
     private String text="";//待显示的文字
 
@@ -47,15 +46,15 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
     private int releaseTextColor = Color.BLUE;
 
 
-    public DragView(Context context) {
+    public HorizontalDragView(Context context) {
         this(context, null, 0);
     }
 
-    public DragView(Context context, @Nullable AttributeSet attrs) {
+    public HorizontalDragView(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public DragView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public HorizontalDragView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         initPaint();
         initTextPaint();
@@ -184,7 +183,6 @@ public class DragView extends View implements HorizontalLayout.OnDragCallBack {
     //设置字体大小
     public final void setTextSize(float size) {
         if (size != textPaint.getTextSize()) {
-            mFontSize = size;
             GetTextInfo();
         }
     }
