@@ -12,6 +12,7 @@ import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.NestedScrollingParentHelper;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -333,7 +334,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     @Override
     public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
-
+        Log.d(TAG, "onNestedFling   velocityX = " + velocityX + " velocityY = " + velocityY + " consumed = " + consumed);
         if (consumed && velocityX > 0 && !target.canScrollHorizontally(1)) {
             inertiaScroll();
         }
@@ -341,11 +342,25 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     }
     @Override
     public boolean onNestedPreFling(View target, float velocityX, float velocityY)  {
-        return false;
+        Log.d(TAG, "onNestedPreFling " );
+        return super.onNestedPreFling(target, velocityX, velocityY);
     }
     @Override
     public int getNestedScrollAxes() {
         return mParentHelper.getNestedScrollAxes();
     }
 
+    @Override
+    public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
+        super.onNestedPreScroll(target, dx, dy, consumed);
+
+        Log.d(TAG, "onNestedPreScroll dx = " + dx + "  dy = " + dy + " consumed[0] = " + consumed[0] + " consumed[1] = " + consumed[1]);
+    }
+
+    @Override
+    public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
+        super.onNestedScroll(target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed);
+
+        Log.d(TAG, "onNestedScroll dxConsumed = " + dxConsumed + "  dyConsumed = " + dyConsumed + " dxUnconsumed = " + dxUnconsumed + " dyUnconsumed = " + dyUnconsumed);
+    }
 }
