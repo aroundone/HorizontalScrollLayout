@@ -3,47 +3,51 @@ package com.example.library;
 import android.animation.Animator;
 import android.animation.PropertyValuesHolder;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.NestedScrollingParent;
-import android.support.v4.view.NestedScrollingParentHelper;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
+import android.widget.Scroller;
 
 /**
  * Created by guoziliang on 2017/7/29.
- *
- * 只负责控制ChildView和DragView的运动，DragView的具体实现由DragView实现，通过接口传递
+ * <p>
+ * 只负责控制ChildView和DragView的运动，DragView的具体实现由DragView实现，这里只负责回调接口{@link #setOnDragCallBack(OnDragCallBack)}
  */
 
-public class HorizontalScrollLayout extends FrameLayout implements NestedScrollingParent{
+public class HorizontalScrollLayout extends FrameLayout implements NestedScrollingParent {
 
-    private final String TAG =  "HorizontalLayout";
+    private final String TAG = "HorizontalLayout";
 
+    //手指拖拽回滚动画时间
+    private int dragBackAniDuration = 500;
+    //拖动到最后自动出现动画时间
+    private int dragEndAniDuration = 300;
+    //是否开始做动画
+    private boolean isBackAniDoing;
     //可以拖拽出来的宽度
     private float mPullWidth = 200;
     //触发变色的宽度
     private float mDragCallBackWidth = 150;
+    //点击开始X轴坐标
+    private float mTouchStartX;
+    //现在点击的X轴坐标
+    private float mTouchCurX;
     //子View，一般都是RecyclerView
     private View mChildView;
     //拖拽View，类似于Header
     private View dragView;
-
-    private float mTouchStartX;
-
-    private float mTouchCurX;
-
-    private boolean isBackAniDoing;
-
-    private NestedScrollingParentHelper mParentHelper;
-
+    //监听滚动Scroller
+    private Scroller mScroller;
+    //回滚动画
     ValueAnimator backAni;
 
     public HorizontalScrollLayout(@NonNull Context context) {
@@ -64,8 +68,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             throw new RuntimeException("you can only attach one child");
         }
         setAttrs(attrs);
-        mParentHelper = new NestedScrollingParentHelper(this);
-        backAni = new ValueAnimator();
+        DecelerateInterpolator interpolator = new DecelerateInterpolator();
+        mScroller = new Scroller(context, interpolator);
+        initBackAni();
         this.post(new Runnable() {
             @Override
             public void run() {
@@ -74,22 +79,77 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         });
     }
 
+    private void initBackAni() {
+        backAni = new ValueAnimator();
+        backAni.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                float val = (float) animation.getAnimatedValue();
+                requestNestedView(val);
+            }
+        });
+
+        backAni.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                isBackAniDoing = true;
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                isBackAniDoing = false;
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        });
+    }
+
     private void setAttrs(AttributeSet attrs) {
 
     }
 
+    /**
+     * 添加DragView
+     * @param child
+     */
     public void addDragView(@NonNull View child) {
         super.addView(child);
         dragView = child;
     }
 
+    /**
+     * 执行抽屉拉出后回滚动画
+     */
     void doDragBackAnimation() {
         PropertyValuesHolder holder = PropertyValuesHolder.ofFloat(TAG, mChildView.getTranslationX(), 0);
-        doBackAnimation(holder, 500);
+        doBackAnimation(holder, dragBackAniDuration);
     }
 
+    /**
+     * 执行拖拽手指Up时回滚动画
+     */
+    private void doBackAnimation(PropertyValuesHolder holder, int duration) {
+        if (backAni == null) {
+            return;
+        }
+        backAni.setValues(holder);
+        backAni.setDuration(duration);
+        backAni.start();
+    }
+
+    /**
+     * Scroller到最后的时候滚动出抽屉效果动效，次方法是执行拉出动效，待拉出结束之后会回调{@link #doBackAnimation(PropertyValuesHolder, int)}
+     */
     void doInertiaAnimation() {
-        ValueAnimator animator = ValueAnimator.ofFloat(0, -150);
+        ValueAnimator animator = ValueAnimator.ofFloat(0, -mDragCallBackWidth);
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -120,59 +180,22 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             }
         });
 
-        animator.setDuration(300);
+        animator.setDuration(dragEndAniDuration);
         animator.start();
 
     }
 
-    private void doBackAnimation(PropertyValuesHolder holder, int duration) {
-        if (mChildView == null || backAni == null) {
-            return;
-        }
-        backAni.setValues(holder);
-        backAni.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                float val = (float) animation.getAnimatedValue();
-                requestNestedView(val);
-            }
-        });
-
-        backAni.addListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-                isBackAniDoing = true;
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                isBackAniDoing = false;
-            }
-
-            @Override
-            public void onAnimationCancel(Animator animation) {
-
-            }
-
-            @Override
-            public void onAnimationRepeat(Animator animation) {
-
-            }
-        });
-
-        backAni.setDuration(duration);
-        backAni.start();
-    }
 
     /**
-     * 刷新DragView
-     * @param val
+     * 刷新DragView，回调{@link #onDragCallBack}事件
+     *
+     * @param val 拖拽x值
      */
     private void requestDragView(float val) {
         if (dragView == null) {
             return;
         }
-        int width = (int)Math.abs(val);
+        int width = (int) Math.abs(val);
         doDragCallBack(val);
         MarginLayoutParams layoutParams = (MarginLayoutParams) dragView.getLayoutParams();
         if (layoutParams != null) {
@@ -180,20 +203,27 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             dragView.requestLayout();
         }
     }
+
+
+    /**
+     * 当子View滚动到末尾的时候，拦截Touch事件，触发自己的刷新操作
+     *
+     * @param ev
+     * @return
+     */
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mTouchStartX = ev.getX();
                 mTouchCurX = mTouchStartX;
-
+                if (mScroller != null) {
+                    mScroller.forceFinished(true);
+                }
                 break;
             case MotionEvent.ACTION_MOVE:
-
                 float curX = ev.getX();
                 float dx = curX - mTouchStartX;
-
                 if (dx > 0 && !canChildScrollLeft()) {
                     return true;
                 }
@@ -208,18 +238,31 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     }
 
 
+    /**
+     * 此时拦截事件，执行自己的尾部拉伸
+     *
+     * @param event
+     * @return
+     */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+
+        Log.d(TAG, "onTouchEvent " + event.getAction() + "");
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                mScroller.forceFinished(true);
+                return true;
+
             case MotionEvent.ACTION_MOVE:
                 if (isBackAniDoing) {
+
+                    Log.d(TAG, "isBackAniDoing");
                     return super.onTouchEvent(event);
                 }
                 mTouchCurX = event.getX();
                 float dx = mTouchCurX - mTouchStartX;
 
-                dragHorizontal(operateDx(dx));
+                requestNestedView(operateDx(dx));
 
                 return true;
             case MotionEvent.ACTION_UP:
@@ -237,19 +280,25 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     }
 
-    /**
-     * 拦截事件，父View做拖拽动效和回调
-     * @param dx
-     */
-    void dragHorizontal(float dx) {
-
-        requestNestedView(dx);
-
-        doDragCallBack(dx);
+    @Override
+    public void computeScroll() {
+        if (mScroller.computeScrollOffset()) {
+            if (!canChildScrollRight()) {
+                Log.d(TAG, "stop Scroll");
+                doInertiaAnimation();
+                mScroller.forceFinished(true);
+            } else {
+                invalidate();
+            }
+        }
+        super.computeScroll();
     }
 
     /**
      * 联动DragView和子View
+     *
+     * 做动画和手指拖拽的时候都需要回调此方法更新UI
+     *
      * @param dx
      */
     void requestNestedView(float dx) {
@@ -257,17 +306,8 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         if (mChildView != null) {
             mChildView.setTranslationX(dx);
         }
-        requestDragView((int)dx);
-    }
-
-    void inertiaScroll() {
-        doInertiaAnimation();
-    }
-
-    float operateDx(float dx) {
-        dx = Math.max(-mPullWidth, dx);
-        dx = Math.min(dx, 0);
-        return dx;
+        //动DragView
+        requestDragView((int) dx);
     }
 
     private void doDragCallBack(float dx) {
@@ -278,6 +318,12 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
                 onDragCallBack.onRelease();
             }
         }
+    }
+
+    float operateDx(float dx) {
+        dx = Math.max(-mPullWidth, dx);
+        dx = Math.min(dx, 0);
+        return dx;
     }
 
     private boolean canChildScrollRight() {
@@ -302,65 +348,34 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         mDragCallBackWidth = callBackWidth;
     }
 
+    @Override
+    public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
+        return (nestedScrollAxes & ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0;
+    }
+
+    @Override
+    public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
+        if (mScroller != null) {
+            mScroller.startScroll(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE);
+            postInvalidate();//通知UI线程的更新
+        }
+        return super.onNestedPreFling(target, velocityX, velocityY);
+    }
+
     public OnDragCallBack onDragCallBack;
 
     public void setOnDragCallBack(OnDragCallBack onDragCallBack) {
         this.onDragCallBack = onDragCallBack;
     }
 
-    public interface OnDragCallBack{
+    /**
+     * 拉拽CallBack
+     */
+    public interface OnDragCallBack {
 
         void onDrag();
 
         void onRelease();
     }
 
-    @Override
-    public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
-
-        return (nestedScrollAxes & ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0;
-    }
-    @SuppressLint("NewApi")
-    @Override
-    public void onNestedScrollAccepted(View child, View target, int nestedScrollAxes) {
-
-        mParentHelper.onNestedScrollAccepted(child, target, nestedScrollAxes);
-    }
-
-    @Override
-    public void onStopNestedScroll(View target) {
-        mParentHelper.onStopNestedScroll(target);
-    }
-
-    @Override
-    public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
-        Log.d(TAG, "onNestedFling   velocityX = " + velocityX + " velocityY = " + velocityY + " consumed = " + consumed);
-        if (consumed && velocityX > 0 && !target.canScrollHorizontally(1)) {
-            inertiaScroll();
-        }
-        return true;
-    }
-    @Override
-    public boolean onNestedPreFling(View target, float velocityX, float velocityY)  {
-        Log.d(TAG, "onNestedPreFling " );
-        return super.onNestedPreFling(target, velocityX, velocityY);
-    }
-    @Override
-    public int getNestedScrollAxes() {
-        return mParentHelper.getNestedScrollAxes();
-    }
-
-    @Override
-    public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
-        super.onNestedPreScroll(target, dx, dy, consumed);
-
-        Log.d(TAG, "onNestedPreScroll dx = " + dx + "  dy = " + dy + " consumed[0] = " + consumed[0] + " consumed[1] = " + consumed[1]);
-    }
-
-    @Override
-    public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
-        super.onNestedScroll(target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed);
-
-        Log.d(TAG, "onNestedScroll dxConsumed = " + dxConsumed + "  dyConsumed = " + dyConsumed + " dxUnconsumed = " + dxUnconsumed + " dyUnconsumed = " + dyUnconsumed);
-    }
 }

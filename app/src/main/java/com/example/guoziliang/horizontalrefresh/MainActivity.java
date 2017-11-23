@@ -9,17 +9,13 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import com.example.library.HorizontalDragView;
 import com.example.library.HorizontalScrollLayout;
 
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -32,7 +28,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         horizontalLayout = (HorizontalScrollLayout) findViewById(R.id.horizontal);
-        btn = (Button) findViewById(R.id.btn);
         HorizontalDragView dragView = new HorizontalDragView(this);
         horizontalLayout.addDragView(dragView);
         horizontalLayout.setOnDragCallBack(dragView);
@@ -45,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
                 this, DividerItemDecoration.HORIZONTAL));
         recyclerView.setAdapter(adapter);
 
+        btn = (Button) findViewById(R.id.btn);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
