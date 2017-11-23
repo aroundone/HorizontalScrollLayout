@@ -10,8 +10,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
@@ -36,11 +34,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     //可以拖拽出来的宽度
     private float mPullWidth = 200;
     //触发变色的宽度
-    private float mDragCallBackWidth = 150;
-    //点击开始X轴坐标
-    private float mTouchStartX;
-    //现在点击的X轴坐标
-    private float mTouchCurX;
+    private float mDragCallBackWidth = 100;
+    //NestScroll中检测手指滑动Dx之和，因为每次只会监听相对值移动，所以需要累加和重置
+    private float scrollTotalDx = 0;
     //子View，一般都是RecyclerView
     private View mChildView;
     //拖拽View，类似于Header
@@ -118,6 +114,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     /**
      * 添加DragView
+     *
      * @param child
      */
     public void addDragView(@NonNull View child) {
@@ -137,7 +134,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
      * 执行拖拽手指Up时回滚动画
      */
     private void doBackAnimation(PropertyValuesHolder holder, int duration) {
-        if (backAni == null) {
+        if (backAni == null || isBackAniDoing) {
             return;
         }
         backAni.setValues(holder);
@@ -204,88 +201,14 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         }
     }
 
-
-    /**
-     * 当子View滚动到末尾的时候，拦截Touch事件，触发自己的刷新操作
-     *
-     * @param ev
-     * @return
-     */
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        switch (ev.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                mTouchStartX = ev.getX();
-                mTouchCurX = mTouchStartX;
-                if (mScroller != null) {
-                    mScroller.forceFinished(true);
-                }
-                break;
-            case MotionEvent.ACTION_MOVE:
-                float curX = ev.getX();
-                float dx = curX - mTouchStartX;
-                if (dx > 0 && !canChildScrollLeft()) {
-                    return true;
-                }
-
-                if (dx < 0 && !canChildScrollRight()) {
-                    return true;
-                }
-
-                break;
-        }
-        return super.onInterceptTouchEvent(ev);
-    }
-
-
-    /**
-     * 此时拦截事件，执行自己的尾部拉伸
-     *
-     * @param event
-     * @return
-     */
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-
-        Log.d(TAG, "onTouchEvent " + event.getAction() + "");
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                mScroller.forceFinished(true);
-                return true;
-
-            case MotionEvent.ACTION_MOVE:
-                if (isBackAniDoing) {
-
-                    Log.d(TAG, "isBackAniDoing");
-                    return super.onTouchEvent(event);
-                }
-                mTouchCurX = event.getX();
-                float dx = mTouchCurX - mTouchStartX;
-
-                requestNestedView(operateDx(dx));
-
-                return true;
-            case MotionEvent.ACTION_UP:
-
-            case MotionEvent.ACTION_CANCEL:
-                if (mChildView != null) {
-                    if (Math.abs(mChildView.getTranslationX()) >= 0) {
-                        doDragBackAnimation();
-                    }
-                }
-                return true;
-            default:
-                return super.onTouchEvent(event);
-        }
-
-    }
-
     @Override
     public void computeScroll() {
         if (mScroller.computeScrollOffset()) {
             if (!canChildScrollRight()) {
-                Log.d(TAG, "stop Scroll");
-                doInertiaAnimation();
+                //抽屉未拉出的时候不做动画
+                if (!isDragViewIsShow()) {
+                    doInertiaAnimation();
+                }
                 mScroller.forceFinished(true);
             } else {
                 invalidate();
@@ -296,7 +219,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     /**
      * 联动DragView和子View
-     *
+     * <p>
      * 做动画和手指拖拽的时候都需要回调此方法更新UI
      *
      * @param dx
@@ -308,6 +231,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         }
         //动DragView
         requestDragView((int) dx);
+        postInvalidate();
     }
 
     private void doDragCallBack(float dx) {
@@ -320,6 +244,12 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         }
     }
 
+    /**
+     * 限制滚动dx不会超过临界值
+     *
+     * @param dx 输入dx值
+     * @return -mPullWidth < dx < 0
+     */
     float operateDx(float dx) {
         dx = Math.max(-mPullWidth, dx);
         dx = Math.min(dx, 0);
@@ -338,6 +268,13 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             return false;
         }
         return ViewCompat.canScrollHorizontally(mChildView, -1);
+    }
+
+    /**
+     * @return 如果抽屉未拉开返回false，否则返回true
+     */
+    private boolean isDragViewIsShow() {
+        return mChildView != null && mChildView.getTranslationX() != 0;
     }
 
     public void setPullWidth(int pullWidth) {
@@ -360,6 +297,39 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             postInvalidate();//通知UI线程的更新
         }
         return super.onNestedPreFling(target, velocityX, velocityY);
+    }
+
+
+    @Override
+    public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
+        super.onNestedPreScroll(target, dx, dy, consumed);
+
+
+        if (!canChildScrollRight()) {
+
+            //右滑到边界，拉出DragView
+            scrollTotalDx += -dx;
+            scrollTotalDx = operateDx(scrollTotalDx);
+            requestNestedView(scrollTotalDx);
+        } else {
+            //下面只有当拉出抽屉之后再往另外方向滑动时调用，用于将抽屉拉回去
+            if (isDragViewIsShow()) {
+                scrollTotalDx -= dx;
+                scrollTotalDx = operateDx(scrollTotalDx);
+                requestNestedView(scrollTotalDx);
+                consumed[0] = dx;
+            }
+        }
+
+    }
+
+    @Override
+    public void stopNestedScroll() {
+        super.stopNestedScroll();
+        scrollTotalDx = 0;
+        if (isDragViewIsShow()) {
+            doDragBackAnimation();
+        }
     }
 
     public OnDragCallBack onDragCallBack;
