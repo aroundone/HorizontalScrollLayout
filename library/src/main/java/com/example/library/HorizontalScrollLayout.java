@@ -306,7 +306,6 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
 
         if (!canChildScrollRight()) {
-
             //右滑到边界，拉出DragView
             scrollTotalDx += -dx;
             scrollTotalDx = operateDx(scrollTotalDx);
