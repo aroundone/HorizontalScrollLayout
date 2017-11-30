@@ -292,7 +292,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     @Override
     public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
-        if (mScroller != null) {
+        if (mScroller != null && velocityX > 0) {
             mScroller.startScroll(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE);
             postInvalidate();//通知UI线程的更新
         }
