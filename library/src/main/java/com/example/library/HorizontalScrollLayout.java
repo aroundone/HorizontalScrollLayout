@@ -179,6 +179,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         if (isLoadingType && hasOutThresholdWidth(Math.abs(scrollTotalDx))) {
             isLoading = true;
             doDragBackAnimation(-thresholdWidth);
+            if (onLoadingCallback != null) {
+                onLoadingCallback.onStartLoading();
+            }
             return;
         }
         isLoading = false;
@@ -198,6 +201,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         if (isLoadingType) {
             isLoading = false;
             doDragBackAnimation(0);
+            if (onLoadingCallback != null) {
+                onLoadingCallback.onStopLoading();
+            }
         }
     }
 

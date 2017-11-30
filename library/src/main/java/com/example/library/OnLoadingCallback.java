@@ -8,5 +8,5 @@ public interface OnLoadingCallback {
 
     void onStartLoading();
 
-
+    void onStopLoading();
 }

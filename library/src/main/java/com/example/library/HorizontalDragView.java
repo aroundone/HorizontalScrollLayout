@@ -20,7 +20,7 @@ import android.widget.FrameLayout;
  * 实现{@link OnDragCallBack}。保证联动
  */
 
-public class HorizontalDragView extends View implements OnDragCallBack {
+public class HorizontalDragView extends View implements OnDragCallBack, OnLoadingCallback {
 
     private final float BEZIER = 0.552284749831f;
 
@@ -242,6 +242,16 @@ public class HorizontalDragView extends View implements OnDragCallBack {
 
     @Override
     public void onFling() {
+
+    }
+
+    @Override
+    public void onStartLoading() {
+
+    }
+
+    @Override
+    public void onStopLoading() {
 
     }
 }
