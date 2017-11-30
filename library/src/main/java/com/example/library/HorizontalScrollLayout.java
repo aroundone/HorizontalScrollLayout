@@ -26,7 +26,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     //手指拖拽回滚动画时间
     private int dragBackAniDuration = 500;
-    //拖动到最后自动出现动画时间
+    //Fling动画时间
     private int dragEndAniDuration = 300;
     //是否开始做动画
     private boolean isBackAniDoing;
@@ -127,7 +127,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     /**
      * 执行抽屉拉出后回滚动画
      */
-    void doDragBackAnimation() {
+    private void doDragBackAnimation() {
         PropertyValuesHolder holder = PropertyValuesHolder.ofFloat(TAG, mChildView.getTranslationX(), 0);
         doBackAnimation(holder, dragBackAniDuration);
     }
