@@ -24,29 +24,77 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     private final String TAG = "HorizontalLayout";
 
-    //手指拖拽回滚动画时间
+
+
+    /**
+     * 手指拖拽回滚动画时间
+     */
     private int dragBackAniDuration = 500;
-    //Fling动画时间
+
+    /**
+     * Fling动画时间
+     */
     private int dragEndAniDuration = 300;
-    //是否开始做动画
+
+    /**
+     * 是否开始做动画
+     */
     private boolean isBackAniDoing;
-    //可以拖拽出来的宽度
+
+    /**
+     * 是否是加载更多模式，如果是此模式，拉出之后不会立刻回去，需要回调{@link #stopLoading()}方法结束
+     */
+    private boolean isLoadingType = false;
+
+    /**
+     * 是不是正在Loading
+     */
+    private boolean isLoading = false;
+
+    /**
+     * 可以拖拽出来的宽度
+     */
     private float mPullWidth = 200;
-    //触发变色的宽度，临界值
+
+    /**
+     * 触发变色的宽度，临界值
+     */
     private float thresholdWidth = 100;
-    //NestScroll中检测手指滑动Dx之和，因为每次只会监听相对值移动，所以需要累加和重置
+
+    /**
+     * NestScroll中检测手指滑动Dx之和，因为每次只会监听相对值移动，所以需要累加和重置
+     */
     private float scrollTotalDx = 0;
 
-    //子View，一般都是RecyclerView
+    /**
+     * 子View，一般都是RecyclerView
+     */
     private View mChildView;
-    //拖拽View，类似于Header
+
+    /**
+     * 拖拽View，类似于Header
+     */
     private View dragView;
-    //监听滚动Scroller
+
+    /**
+     * 监听滚动Scroller
+     */
     private Scroller mScroller;
-    //回滚动画
+
+    /**
+     * 回滚动画
+     */
     private ValueAnimator backAni;
-    //回调
+
+    /**
+     * 拖拽回调
+     */
     private OnDragCallBack onDragCallBack;
+
+    /**
+     * Loading回调
+     */
+    private OnLoadingCallback onLoadingCallback;
 
     public HorizontalScrollLayout(@NonNull Context context) {
         this(context, null, 0);
@@ -127,9 +175,30 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     /**
      * 执行抽屉拉出后回滚动画
      */
-    private void doDragBackAnimation() {
-        PropertyValuesHolder holder = PropertyValuesHolder.ofFloat(TAG, mChildView.getTranslationX(), 0);
+    private void doDragBackAnimationCheck() {
+        if (isLoadingType && hasOutThresholdWidth(Math.abs(scrollTotalDx))) {
+            isLoading = true;
+            doDragBackAnimation(-thresholdWidth);
+            return;
+        }
+        isLoading = false;
+        doDragBackAnimation(0);
+    }
+
+    /**
+     * 执行抽屉拉出后回滚动画
+     */
+    private void doDragBackAnimation(float endX) {
+        PropertyValuesHolder holder = PropertyValuesHolder.ofFloat(TAG, mChildView.getTranslationX(), endX);
         doBackAnimation(holder, dragBackAniDuration);
+        resetScrollTotalDx(endX);
+    }
+
+    public void stopLoading() {
+        if (isLoadingType) {
+            isLoading = false;
+            doDragBackAnimation(0);
+        }
     }
 
     /**
@@ -145,7 +214,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     }
 
     /**
-     * Scroller到最后的时候滚动出抽屉效果动效，次方法是执行拉出动效，待拉出结束之后会回调{@link #doBackAnimation(PropertyValuesHolder, int)}
+     * Fling到最后的时候滚动出抽屉效果动效，此方法是执行拉出动效，待拉出结束之后会回调{@link #doBackAnimation(PropertyValuesHolder, int)}
      */
     private void doInertiaAnimation() {
         ValueAnimator animator = ValueAnimator.ofFloat(0, -thresholdWidth);
@@ -165,7 +234,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                doDragBackAnimation();
+                doDragBackAnimationCheck();
             }
 
             @Override
@@ -205,7 +274,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     @Override
     public void computeScroll() {
-        if (mScroller.computeScrollOffset()) {
+        if (mScroller != null && mScroller.computeScrollOffset()) {
             if (!canChildScrollRight()) {
                 //抽屉未拉出的时候不做动画
                 if (!isDragViewIsShow()) {
@@ -270,6 +339,10 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         return dx;
     }
 
+    private void resetScrollTotalDx(float x) {
+        scrollTotalDx = x;
+    }
+
     private boolean canChildScrollRight() {
         if (mChildView == null) {
             return false;
@@ -308,6 +381,14 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     }
 
     /**
+     * 设置Loading模式，是否开始Loading模式，Loading模式拉出后需要调用{@link #stopLoading()}方法才能结束调用
+     * @param isLoadingType Loading模式
+     */
+    public void setLoadingType(boolean isLoadingType) {
+        this.isLoadingType = isLoadingType;
+    }
+
+    /**
      * 设置回调
      * @param onDragCallBack 回调
      */
@@ -324,7 +405,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
         if (mScroller != null && velocityX > 0) {
             mScroller.startScroll(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE);
-            postInvalidate();//通知UI线程的更新
+            postInvalidate();
         }
         return super.onNestedPreFling(target, velocityX, velocityY);
     }
@@ -332,7 +413,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     @Override
     public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
         super.onNestedPreScroll(target, dx, dy, consumed);
-
+        if (isLoading) {
+            return;
+        }
         if (!canChildScrollRight()) {
             //右滑到边界，拉出DragView
             scrollTotalDx += -dx;
@@ -350,16 +433,23 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     }
 
+    /**
+     * @deprecated 外部不允许调用
+     */
     @Override
     public void stopNestedScroll() {
         super.stopNestedScroll();
 
         if (isDragViewIsShow()) {
-            doDragBackAnimation();
+
+            if (isLoading) {
+                return;
+            }
+
+            doDragBackAnimationCheck();
             if (onDragCallBack != null) {
                 onDragCallBack.onRelease(hasOutThresholdWidth(Math.abs(scrollTotalDx)));
             }
         }
-        scrollTotalDx = 0;
     }
 }

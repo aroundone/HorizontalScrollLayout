@@ -100,8 +100,8 @@ public class HorizontalDragView extends View implements OnDragCallBack {
     }
 
     @Override
-    public void onWindowFocusChanged(boolean hasWindowFocus) {
-        super.onWindowFocusChanged(hasWindowFocus);
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT);
         params.gravity = Gravity.RIGHT;
         setLayoutParams(params);

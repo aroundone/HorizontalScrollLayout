@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         horizontalLayout = (HorizontalScrollLayout) findViewById(R.id.horizontal);
         HorizontalDragView dragView = new HorizontalDragView(this);
+        horizontalLayout.setLoadingType(false);
         horizontalLayout.addDragView(dragView);
         horizontalLayout.setOnDragCallBack(dragView);
 
@@ -45,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 adapter.add(5);
+                horizontalLayout.stopLoading();
             }
         });
     }
