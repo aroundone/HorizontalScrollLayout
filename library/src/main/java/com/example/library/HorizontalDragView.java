@@ -17,7 +17,7 @@ import android.widget.FrameLayout;
 /**
  * Created by guoziliang on 2017/7/31.
  *
- * 实现{@link com.example.library.OnDragCallBack}。保证联动
+ * 实现{@link OnDragCallBack}。保证联动
  */
 
 public class HorizontalDragView extends View implements OnDragCallBack {
