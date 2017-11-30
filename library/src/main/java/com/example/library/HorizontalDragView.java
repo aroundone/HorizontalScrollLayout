@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
-import android.graphics.Typeface;
 import android.support.annotation.ColorInt;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -18,10 +17,10 @@ import android.widget.FrameLayout;
 /**
  * Created by guoziliang on 2017/7/31.
  *
- * 实现{@link com.example.library.HorizontalScrollLayout.OnDragCallBack}。保证联动
+ * 实现{@link com.example.library.OnDragCallBack}。保证联动
  */
 
-public class HorizontalDragView extends View implements HorizontalScrollLayout.OnDragCallBack {
+public class HorizontalDragView extends View implements OnDragCallBack {
 
     private final float BEZIER = 0.552284749831f;
 
@@ -38,10 +37,10 @@ public class HorizontalDragView extends View implements HorizontalScrollLayout.O
     private String text="";//待显示的文字
 
 
-    private String dragText;
-    private int dragTextColor;
-    private String releaseText;
-    private int releaseTextColor;
+    private String outThresholdText;
+    private int outThresholdColor;
+    private String inThresholdText;
+    private int inThresholdColor;
 
     private PointF[] vertexPoints = new PointF[3];
     private PointF[] controlPoints = new PointF[4];
@@ -66,10 +65,10 @@ public class HorizontalDragView extends View implements HorizontalScrollLayout.O
 
     private void initAttributes() {
         bezierPaintColor = Color.parseColor("#bbbbbb");
-        dragText = "大V推荐";
-        releaseText = "松开啦";
-        dragTextColor = Color.BLACK;
-        releaseTextColor = Color.BLUE;
+        inThresholdText = "轻点儿";
+        outThresholdText = "松开啦";
+        inThresholdColor = Color.BLACK;
+        outThresholdColor = Color.BLUE;
     }
 
     private void initTextPaint() {
@@ -205,20 +204,20 @@ public class HorizontalDragView extends View implements HorizontalScrollLayout.O
         }
     }
 
-    public void setDragText(String dragText) {
-        this.dragText = dragText;
+    public void setInThresholdText(String inThresholdText) {
+        this.inThresholdText = inThresholdText;
     }
 
-    public void setDragTextColor(@ColorInt int dragTextColor) {
-        this.dragTextColor = dragTextColor;
+    public void setInThresholdColor(@ColorInt int inThresholdColor) {
+        this.inThresholdColor = inThresholdColor;
     }
 
-    public void setReleaseText(String releaseText) {
-        this.releaseText = releaseText;
+    public void setOutThresholdText(String outThresholdText) {
+        this.outThresholdText = outThresholdText;
     }
 
-    public void setReleaseTextColor(@ColorInt int releaseTextColor) {
-        this.releaseTextColor = releaseTextColor;
+    public void setOutThresholdColor(@ColorInt int outThresholdColor) {
+        this.outThresholdColor = outThresholdColor;
     }
 
     public void setBezierPaintColor(@ColorInt int bezierPaintColor) {
@@ -226,14 +225,23 @@ public class HorizontalDragView extends View implements HorizontalScrollLayout.O
     }
 
     @Override
-    public void onDrag() {
-        setText(dragText);
-        setTextColor(dragTextColor);
+    public void onDragging(boolean outThreshold) {
+        if (outThreshold) {
+            setText(outThresholdText);
+            setTextColor(outThresholdColor);
+        } else {
+            setText(inThresholdText);
+            setTextColor(inThresholdColor);
+        }
     }
 
     @Override
-    public void onRelease() {
-        setText(releaseText);
-        setTextColor(releaseTextColor);
+    public void onRelease(boolean outThreshold) {
+
+    }
+
+    @Override
+    public void onFling() {
+
     }
 }

@@ -17,7 +17,6 @@ import android.widget.Scroller;
 
 /**
  * Created by guoziliang on 2017/7/29.
- * <p>
  * 只负责控制ChildView和DragView的运动，DragView的具体实现由DragView实现，这里只负责回调接口{@link #setOnDragCallBack(OnDragCallBack)}
  */
 
@@ -33,10 +32,11 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     private boolean isBackAniDoing;
     //可以拖拽出来的宽度
     private float mPullWidth = 200;
-    //触发变色的宽度
-    private float mDragCallBackWidth = 100;
+    //触发变色的宽度，临界值
+    private float thresholdWidth = 100;
     //NestScroll中检测手指滑动Dx之和，因为每次只会监听相对值移动，所以需要累加和重置
     private float scrollTotalDx = 0;
+
     //子View，一般都是RecyclerView
     private View mChildView;
     //拖拽View，类似于Header
@@ -44,7 +44,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     //监听滚动Scroller
     private Scroller mScroller;
     //回滚动画
-    ValueAnimator backAni;
+    private ValueAnimator backAni;
+    //回调
+    private OnDragCallBack onDragCallBack;
 
     public HorizontalScrollLayout(@NonNull Context context) {
         this(context, null, 0);
@@ -115,7 +117,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     /**
      * 添加DragView
      *
-     * @param child
+     * @param child childView
      */
     public void addDragView(@NonNull View child) {
         super.addView(child);
@@ -145,8 +147,8 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     /**
      * Scroller到最后的时候滚动出抽屉效果动效，次方法是执行拉出动效，待拉出结束之后会回调{@link #doBackAnimation(PropertyValuesHolder, int)}
      */
-    void doInertiaAnimation() {
-        ValueAnimator animator = ValueAnimator.ofFloat(0, -mDragCallBackWidth);
+    private void doInertiaAnimation() {
+        ValueAnimator animator = ValueAnimator.ofFloat(0, -thresholdWidth);
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -208,6 +210,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
                 //抽屉未拉出的时候不做动画
                 if (!isDragViewIsShow()) {
                     doInertiaAnimation();
+                    if (onDragCallBack != null) {
+                        onDragCallBack.onFling();
+                    }
                 }
                 mScroller.forceFinished(true);
             } else {
@@ -222,9 +227,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
      * <p>
      * 做动画和手指拖拽的时候都需要回调此方法更新UI
      *
-     * @param dx
+     * @param dx dx
      */
-    void requestNestedView(float dx) {
+    private void requestNestedView(float dx) {
         //动子View
         if (mChildView != null) {
             mChildView.setTranslationX(dx);
@@ -236,12 +241,21 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
 
     private void doDragCallBack(float dx) {
         if (onDragCallBack != null) {
-            if (Math.abs(dx) > mDragCallBackWidth) {
-                onDragCallBack.onDrag();
+            if (hasOutThresholdWidth(Math.abs(dx))) {
+                onDragCallBack.onDragging(true);
             } else {
-                onDragCallBack.onRelease();
+                onDragCallBack.onDragging(false);
             }
         }
+    }
+
+    /**
+     * 是否超出临界值
+     * @param width 宽度
+     * @return 是否超出临界值
+     */
+    private boolean hasOutThresholdWidth(float width) {
+        return width > thresholdWidth;
     }
 
     /**
@@ -250,7 +264,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
      * @param dx 输入dx值
      * @return -mPullWidth < dx < 0
      */
-    float operateDx(float dx) {
+    private float operateDx(float dx) {
         dx = Math.max(-mPullWidth, dx);
         dx = Math.min(dx, 0);
         return dx;
@@ -277,12 +291,28 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         return mChildView != null && mChildView.getTranslationX() != 0;
     }
 
+    /**
+     * 设置可以拖拽出来的宽度
+     * @param pullWidth 可以拖拽出来的宽度
+     */
     public void setPullWidth(int pullWidth) {
         mPullWidth = pullWidth;
     }
 
-    public void setDragCallBackWidth(int callBackWidth) {
-        mDragCallBackWidth = callBackWidth;
+    /**
+     * 设置临界值
+     * @param thresholdWidth 临界值
+     */
+    public void setThresholdWidth(int thresholdWidth) {
+        this.thresholdWidth = thresholdWidth;
+    }
+
+    /**
+     * 设置回调
+     * @param onDragCallBack 回调
+     */
+    public void setOnDragCallBack(OnDragCallBack onDragCallBack) {
+        this.onDragCallBack = onDragCallBack;
     }
 
     @Override
@@ -299,11 +329,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         return super.onNestedPreFling(target, velocityX, velocityY);
     }
 
-
     @Override
     public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
         super.onNestedPreScroll(target, dx, dy, consumed);
-
 
         if (!canChildScrollRight()) {
             //右滑到边界，拉出DragView
@@ -325,26 +353,13 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     @Override
     public void stopNestedScroll() {
         super.stopNestedScroll();
-        scrollTotalDx = 0;
+
         if (isDragViewIsShow()) {
             doDragBackAnimation();
+            if (onDragCallBack != null) {
+                onDragCallBack.onRelease(hasOutThresholdWidth(Math.abs(scrollTotalDx)));
+            }
         }
+        scrollTotalDx = 0;
     }
-
-    public OnDragCallBack onDragCallBack;
-
-    public void setOnDragCallBack(OnDragCallBack onDragCallBack) {
-        this.onDragCallBack = onDragCallBack;
-    }
-
-    /**
-     * 拉拽CallBack
-     */
-    public interface OnDragCallBack {
-
-        void onDrag();
-
-        void onRelease();
-    }
-
 }
