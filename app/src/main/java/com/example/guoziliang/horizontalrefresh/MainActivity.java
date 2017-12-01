@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
         horizontalLayout.setLoadingType(false);
         horizontalLayout.addDragView(dragView);
         horizontalLayout.setOnDragCallBack(dragView);
+        horizontalLayout.setOnLoadingCallBack(dragView);
 
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler);

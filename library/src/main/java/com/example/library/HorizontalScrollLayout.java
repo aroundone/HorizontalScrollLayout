@@ -402,6 +402,10 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         this.onDragCallBack = onDragCallBack;
     }
 
+    public void setOnLoadingCallBack(OnLoadingCallback onLoadingCallback) {
+        this.onLoadingCallback = onLoadingCallback;
+    }
+
     @Override
     public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
         return (nestedScrollAxes & ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0;
