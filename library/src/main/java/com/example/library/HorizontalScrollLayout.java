@@ -25,7 +25,6 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     private final String TAG = "HorizontalLayout";
 
 
-
     /**
      * 手指拖拽回滚动画时间
      */
@@ -60,6 +59,9 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
      * 触发变色的宽度，临界值
      */
     private float thresholdWidth = 100;
+
+
+    public static float outThresholdWidth;
 
     /**
      * NestScroll中检测手指滑动Dx之和，因为每次只会监听相对值移动，所以需要累加和重置
@@ -113,6 +115,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         if (getChildCount() > 1) {
             throw new RuntimeException("you can only attach one child");
         }
+        outThresholdWidth = thresholdWidth;
         setAttrs(attrs);
         DecelerateInterpolator interpolator = new DecelerateInterpolator();
         mScroller = new Scroller(context, interpolator);
@@ -455,11 +458,11 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             if (isLoading) {
                 return;
             }
-
-            doDragBackAnimationCheck();
             if (onDragCallBack != null) {
                 onDragCallBack.onRelease(hasOutThresholdWidth(Math.abs(scrollTotalDx)));
             }
+
+            doDragBackAnimationCheck();
         }
     }
 }

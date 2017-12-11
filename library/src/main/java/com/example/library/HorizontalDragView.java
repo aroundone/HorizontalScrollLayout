@@ -64,11 +64,11 @@ public class HorizontalDragView extends View implements OnDragCallBack, OnLoadin
     }
 
     private void initAttributes() {
-        bezierPaintColor = Color.parseColor("#bbbbbb");
-        inThresholdText = "轻点儿";
+        bezierPaintColor = Color.parseColor("#dddddd");
+        inThresholdText = "相关推荐";
         outThresholdText = "松开啦";
-        inThresholdColor = Color.BLACK;
-        outThresholdColor = Color.BLUE;
+        inThresholdColor = Color.parseColor("#888888");
+        outThresholdColor = Color.parseColor("#04da00");
     }
 
     private void initTextPaint() {
@@ -114,9 +114,20 @@ public class HorizontalDragView extends View implements OnDragCallBack, OnLoadin
         drawText(canvas, this.text);
     }
 
+    private void doDragCallBack(float dx) {
+
+        if ((Math.abs(dx)) > HorizontalScrollLayout.outThresholdWidth) {
+            onDragging(true);
+        } else {
+            onDragging(false);
+        }
+
+    }
+
     private void drawBezier(Canvas canvas) {
         int width = getWidth();
         int height = getHeight();
+        doDragCallBack(width);
         initPoint(width, height);
         drawBezierPath();
         canvas.drawPath(path, bezierPaint);
