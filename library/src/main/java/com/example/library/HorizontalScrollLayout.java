@@ -8,6 +8,7 @@ import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.NestedScrollingParent;
+import android.support.v4.view.NestedScrollingParentHelper;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.view.View;
@@ -98,6 +99,8 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
      */
     private OnLoadingCallback onLoadingCallback;
 
+    private NestedScrollingParentHelper mNestedParentHelper;
+
     public HorizontalScrollLayout(@NonNull Context context) {
         this(context, null, 0);
     }
@@ -119,6 +122,7 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
         setAttrs(attrs);
         DecelerateInterpolator interpolator = new DecelerateInterpolator();
         mScroller = new Scroller(context, interpolator);
+        mNestedParentHelper = new NestedScrollingParentHelper(this);
         initBackAni();
         this.post(new Runnable() {
             @Override
@@ -410,6 +414,38 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
     }
 
     @Override
+    public void onNestedScrollAccepted(View child, View target, int axes) {
+        mNestedParentHelper.onNestedScrollAccepted(child, target, ViewCompat.SCROLL_AXIS_HORIZONTAL);
+    }
+
+    @Override
+    public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed) {
+
+    }
+
+    @Override
+    public int getNestedScrollAxes() {
+        return mNestedParentHelper.getNestedScrollAxes();
+    }
+
+    @Override
+    public void onStopNestedScroll(View child) {
+        mNestedParentHelper.onStopNestedScroll(child);
+
+        if (isDragViewIsShow()) {
+
+            if (isLoading) {
+                return;
+            }
+            if (onDragCallBack != null) {
+                onDragCallBack.onRelease(hasOutThresholdWidth(Math.abs(scrollTotalDx)));
+            }
+
+            doDragBackAnimationCheck();
+        }
+    }
+
+    @Override
     public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
         return (nestedScrollAxes & ViewCompat.SCROLL_AXIS_HORIZONTAL) != 0;
     }
@@ -420,12 +456,18 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             mScroller.startScroll(0, 0, Integer.MAX_VALUE, Integer.MAX_VALUE);
             postInvalidate();
         }
-        return super.onNestedPreFling(target, velocityX, velocityY);
+        return false;
+    }
+
+
+
+    @Override
+    public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
+        return false;
     }
 
     @Override
     public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
-        super.onNestedPreScroll(target, dx, dy, consumed);
         if (isLoading) {
             return;
         }
@@ -444,25 +486,5 @@ public class HorizontalScrollLayout extends FrameLayout implements NestedScrolli
             }
         }
 
-    }
-
-    /**
-     * @deprecated 外部不允许调用
-     */
-    @Override
-    public void stopNestedScroll() {
-        super.stopNestedScroll();
-
-        if (isDragViewIsShow()) {
-
-            if (isLoading) {
-                return;
-            }
-            if (onDragCallBack != null) {
-                onDragCallBack.onRelease(hasOutThresholdWidth(Math.abs(scrollTotalDx)));
-            }
-
-            doDragBackAnimationCheck();
-        }
     }
 }
